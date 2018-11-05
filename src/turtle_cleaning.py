@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from turtlesim.msg import Pose
 import math
+import sys
 import time
 from std_srvs.srv import Empty
 
@@ -169,28 +170,24 @@ def goGrid():
 
 if __name__ == '__main__':
 
-    try:
-        global CMD_PUB
-        rospy.init_node('turtle_cleaning', anonymous = True)
+    global CMD_PUB
+    rospy.init_node('turtle_cleaning', anonymous = True)
 
-        CMD_PUB = rospy.Publisher(CMD_VEL_TOPIC, Twist, queue_size = 10)
+    CMD_PUB = rospy.Publisher(CMD_VEL_TOPIC, Twist, queue_size = 10)
 
-        rospy.Subscriber(POSE_TOPIC, Pose, poseCallback)
+    rospy.Subscriber(POSE_TOPIC, Pose, poseCallback)
 
-        while x != 0:
-            time.sleep(0.5)
+    while x != 0:
+        time.sleep(0.5)
 
-        if len(sys.argv) == 2:
-            cleanType = sys.argv[1]
-        else
-            sys.exit('No clean type supplied')
+    if len(sys.argv) == 2:
+        cleanType = sys.argv[1]
+    else:
+        sys.exit('No clean type supplied')
 
-        if cleanType == 'spiral':
-            goSpiral()
-        else if cleanType == 'grid':
-            goGrid()
-        else
-            sys.exit('Not support cleaning type')
-
-    except:
-        print 'exception'
+    if cleanType == 'spiral':
+        goSpiral()
+    elif cleanType == 'grid':
+        goGrid()
+    else:
+        sys.exit('Not support cleaning type')
