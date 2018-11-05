@@ -10,27 +10,19 @@ from std_srvs.srv import Empty
 
 
 PI = math.pi
-X_MIN = 0.0
-Y_MIN = 0.0
-X_MAX = 11.0
-Y_MAX = 11.0
 
-# RIGHT_ANGLE = math.pi / 2
-# poseReceived = False
-# moving = False
-# distanceMoved = 0
 x = 0
 y = 0
 theta = 0
-# CMD_VEL_TOPIC = '/turtle1/cmd_vel'
-# CMD_PUB = NONE
-# POSE_TOPIC = '/turtle1/pose'
+POSE_TOPIC = '/turtle1/pose'
+CMD_VEL_TOPIC = '/turtle1/cmd_vel'
+CMD_PUB = None
 
 def deg2Rad(deg):
     return PI * deg / 180
 
 def poseCallback(pose):
-    global x, y, yaw
+    global x, y, theta
     x = pose.x
     y = pose.y
     theta = pose.theta
@@ -48,21 +40,17 @@ def move(speed, distance, isForward = True):
     if not isForward:
         speed = -speed
 
-    global x, y, moving, distanceMoved
-    x0 = x
-    y0 = y
-
+    global x, y
 
     twist.linear.x = speed
     distance_moved = 0.0
     loop = rospy.Rate(10)
-    moving = True
 
     t0 = time.time()
     while True:
         CMD_PUB.publish(twist)
         t1 = time.time()
-        distance_moved = spped * (t1 - t0)
+        distance_moved = speed * (t1 - t0)
         loop.sleep()
 
         if (distance_moved >= distance):
@@ -84,7 +72,7 @@ def spin(speed, angle, clockwise = True):
         t1 = time.time()
         current_angle = speed * (t1 - t0)
         loop.sleep()
-        if current_angle >= relative_angle:
+        if current_angle >= angle:
             break
     stop()
 
@@ -93,14 +81,13 @@ def setOrientation(orientation):
     clockwise = True if delta > 0 else False
     spin(deg2Rad(10), abs(delta), clockwise)
 
-def moveTo(Pose, tolerance = 0.01):
+def moveTo(pose, tolerance = 0.01):
 
     global x, y, theta
     twist = Twist()
     loop = rospy.Rate(100)
     moved = 0.0
     Kp = 1.0
-    Ki = 0.02
 
     while True:
         distance = getDistance(x, y, pose.x, pose.y)
