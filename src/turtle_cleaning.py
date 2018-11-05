@@ -8,133 +8,164 @@ import time
 from std_srvs.srv import Empty
 
 
-class Cleaner():
-    def __init__()
+PI = math.pi
+X_MIN = 0.0
+Y_MIN = 0.0
+X_MAX = 11.0
+Y_MAX = 11.0
 
-RIGHT_ANGLE = math.pi / 2
-poseReceived = False
-moving = False
-distanceMoved = 0
+# RIGHT_ANGLE = math.pi / 2
+# poseReceived = False
+# moving = False
+# distanceMoved = 0
 x = 0
 y = 0
-yaw = 0
-CMD_VEL_TOPIC = '/turtle1/cmd_vel'
-CMD_PUB = NONE
-POSE_TOPIC = '/turtle1/pose'
+theta = 0
+# CMD_VEL_TOPIC = '/turtle1/cmd_vel'
+# CMD_PUB = NONE
+# POSE_TOPIC = '/turtle1/pose'
 
-def degree2Rad(deg):
-    return math.pi * deg / 180
-
-def calcDistance(x1, y1, x2, y2):
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-
-def didReach(targetX, targetY, tolerance):
-    return calcDistance(targetX, targetY, x, y) <= abs(tolerance)
+def deg2Rad(deg):
+    return PI * deg / 180
 
 def poseCallback(pose):
-    global x, y, z, yaw, poseReceived, distanceMoved
-    if moving:
-        distanceMoved += math.sqrt((x - pose.x) ** 2 + (y - pose.y) ** 2)
-    else:
-        distanceMoved = 0
+    global x, y, yaw
     x = pose.x
     y = pose.y
-    yaw = pose.theta
-    poseReceived = True
+    theta = pose.theta
 
-def move(speed, distance, isForward = True, callback = lamda *args: None):
+def getDistance(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+def stop():
+    CMD_PUB.publish(Twist())
+
+
+def move(speed, distance, isForward = True):
 
     twist = Twist()
+    if not isForward:
+        speed = -speed
+
     global x, y, moving, distanceMoved
     x0 = x
     y0 = y
 
-    if not isForward:
-        speed = -speed
 
     twist.linear.x = speed
     distance_moved = 0.0
     loop = rospy.Rate(10)
     moving = True
 
+    t0 = time.time()
     while True:
         CMD_PUB.publish(twist)
+        t1 = time.time()
+        distance_moved = spped * (t1 - t0)
         loop.sleep()
-        if (distanceMoved > distance):
+
+        if (distance_moved >= distance):
             break
+    stop()
 
-    moving = False
-    pub.publish(Twist())
-    callback()
-
-def spin(speed, angle, clockwise = True, callback = lamda *args: None):
+def spin(speed, angle, clockwise = True):
 
     twist = Twist()
-    twist.angular.z = speed
-    global yaw
-    yaw0 = yaw
-    angle = degree2Rad(angle)
     if clockwise:
         speed = -speed
-        angle = -angle
+    twist.angular.z = speed
 
-    target = yaw0 + angle
-    def reached():
-        delta = target - yaw
-        if clockwise:
-            return delta >= 0
-        else
-            return delta <= 0
-
+    current_angle = 0.0
+    t0 = time.time()
+    loop = rospy.Rate(10)
     while True:
         CMD_PUB.publish(twist)
+        t1 = time.time()
+        current_angle = speed * (t1 - t0)
         loop.sleep()
-        if reached():
+        if current_angle >= relative_angle:
             break
+    stop()
 
-    pub.publish(Twist())
-    callback()
+def setOrientation(orientation):
+    delta = orientation - theta
+    clockwise = True if delta > 0 else False
+    spin(deg2Rad(10), abs(delta), clockwise)
 
-def moveTo(targetX, targetY, tolerance = 0.01):
+def moveTo(Pose, tolerance = 0.01):
 
-    maxLinearSpeed = 4
-    maxAngularSpeed = 1
-    global x, y, yaw
-
-    direction = math.atan(x - targetX, y - targetY)
-
-    loop = rospy.Rate(10)
+    global x, y, theta
+    twist = Twist()
+    loop = rospy.Rate(100)
+    moved = 0.0
+    Kp = 1.0
+    Ki = 0.02
 
     while True:
+        distance = getDistance(x, y, pose.x, pose.y)
+        moved += distance
         twist = Twist()
-        angleDiff = direction - yaw
-        clockwise = True if angleDiff < 0 and  else False
-
-        # calculate speed, set to twist msg
-        if abs(angleDiff) > RIGHT_ANGLE:
-            # rotate only, when the angle is less than 90, call this method again
-            rotateAngle = angleDiff - RIGHT_ANGLE
-            spin(maxAngularSpeed * angleDiff / math.pi, rotateAngle, clockwise, moveTo(targetX, targetY, tolerance))
-            return
-        else:
-            twist.linear.x = math.min(maxLinearSpeed, maxLinearSpeed * calcDistance(targetX, targetY, x, y))
-            twist.angular.z = maxAngularSpeed * angleDiff / RIGHT_ANGLE
-
+        twist.linear.x = Kp * e
+        twist.angular.z = 4 * (math.atan2(pose.y - y, pose.x - x) - theta)
+        CMD_PUB.publish(twist)
         loop.sleep()
-        if didReach(targetX, targetY, tolerance):
+        if distance <= tolerance:
             break
-
-    pub.publish(Twist())
-
-
-
-
-
+    stop()
 
 def goSpiral():
-    # todo
+    loop = rospy.Rate(1)
+    speed = 4
+    twist = Twist()
+    vk = 1
+    wk = 2
+    rk = 0.5
+
+    while True:
+        rk += 1
+        twist.linear.x = rk
+        twist.angular.z = speed
+        CMD_PUB.publish(twist)
+        loop.sleep()
+        if (x > 10.5 or y > 10.5):
+            break
+    stop()
+
+
 def goGrid():
-    # todo
+    loop = rospy.Rate(0.5)
+    pose = Pose()
+    pose.x = 1
+    pose.y = 1
+    pose.theta = 0
+    moveTo(pose)
+    loop.sleep()
+    setOrientation(0)
+    loop.sleep()
+
+    move(2, 9)
+    loop.sleep()
+    spin(deg2Rad(10), deg2Rad(90), False)
+    loop.sleep()
+    move(2, 9)
+
+    loop.sleep()
+    spin(deg2Rad(10), deg2Rad(90), False)
+    loop.sleep()
+    move(2, 1)
+    spin(deg2Rad(10), deg2Rad(90), False)
+    loop.sleep()
+    move(2, 9)
+    loop.sleep()
+    spin(deg2Rad(30), deg2Rad(90))
+    loop.sleep()
+    move(2, 1)
+    loop.sleep()
+    spin(deg2Rad(30), deg2Rad(90))
+    move(2, 9)
+
+
+
 
 if __name__ == '__main__':
 
