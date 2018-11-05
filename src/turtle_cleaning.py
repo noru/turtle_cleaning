@@ -93,7 +93,7 @@ def moveTo(pose, tolerance = 0.01):
         distance = getDistance(x, y, pose.x, pose.y)
         moved += distance
         twist = Twist()
-        twist.linear.x = Kp * e
+        twist.linear.x = Kp * distance
         twist.angular.z = 4 * (math.atan2(pose.y - y, pose.x - x) - theta)
         CMD_PUB.publish(twist)
         loop.sleep()
@@ -157,11 +157,9 @@ def goGrid():
 
 if __name__ == '__main__':
 
-    global CMD_PUB
     rospy.init_node('turtle_cleaning', anonymous = True)
 
     CMD_PUB = rospy.Publisher(CMD_VEL_TOPIC, Twist, queue_size = 10)
-
     rospy.Subscriber(POSE_TOPIC, Pose, poseCallback)
 
     while x != 0:
