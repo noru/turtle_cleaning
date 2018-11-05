@@ -49,11 +49,12 @@ def move(speed, distance, isForward = True):
     t0 = time.time()
     while True:
         CMD_PUB.publish(twist)
-        t1 = time.time()
-        distance_moved = speed * (t1 - t0)
         loop.sleep()
 
-        if (distance_moved >= distance):
+        t1 = time.time()
+        distance_moved = speed * (t1 - t0)
+
+        if distance_moved >= distance:
             break
     stop()
 
@@ -69,16 +70,16 @@ def spin(speed, angle, clockwise = True):
     loop = rospy.Rate(10)
     while True:
         CMD_PUB.publish(twist)
-        t1 = time.time()
-        current_angle = speed * (t1 - t0)
         loop.sleep()
+        t1 = time.time()
+        current_angle = abs(speed) * (t1 - t0)
         if current_angle >= angle:
             break
     stop()
 
 def setOrientation(orientation):
     delta = orientation - theta
-    clockwise = True if delta > 0 else False
+    clockwise = True if delta < 0 else False
     spin(deg2Rad(10), abs(delta), clockwise)
 
 def moveTo(pose, tolerance = 0.01):
@@ -105,8 +106,6 @@ def goSpiral():
     loop = rospy.Rate(1)
     speed = 4
     twist = Twist()
-    vk = 1
-    wk = 2
     rk = 0.5
 
     while True:
